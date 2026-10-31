@@ -1,118 +1,127 @@
-# Empório da Música — Agente de Atendimento Inteligente 🎵
+# Empório da Música — Intelligent Customer Support AI Agent 🎵
 
-Protótipo de Agente Conversacional desenvolvido como solução para o **Desafio Técnico de AI Engineer (2026)** da consultoria **Artefact**.
+[![Unit Tests](https://img.shields.io/badge/pytest-31%20passed-brightgreen.svg)](tests/)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.14-blue.svg)](pyproject.toml)
+[![Architecture](https://img.shields.io/badge/architecture-hybrid%20tool%20calling%20%2B%20rag-orange.svg)](#-architecture-overview)
+[![License](https://img.shields.io/badge/license-MIT-lightgrey.svg)](LICENSE)
 
-O projeto resolve o problema de sobrecarga no atendimento da **Empório da Música** (loja tradicional fundada em 2008 em Campo Grande/MS), automatizando dúvidas recorrentes sobre catálogo de instrumentos, disponibilidade, preços, status de pedidos e políticas internas da loja através de **Tool Calling** e **RAG**.
+*Read this document in Portuguese: [README_pt.md](README_pt.md)*
 
----
+Prototype of an Intelligent Conversational AI Agent developed as a comprehensive solution for the **Artefact AI Engineer Technical Case (2026)**.
 
-## 📑 Sumário Executivo
-
-1. [Visão Geral da Arquitetura](#-visão-geral-da-arquitetura)
-2. [Justificativas Técnicas e Decisões de Design](#-justificativas-técnicas-e-decisões-de-design)
-3. [Como Executar o Projeto](#-como-executar-o-projeto)
-4. [Execução dos Testes Automatizados](#-execução-dos-testes-automatizados)
-5. [Exemplos de Interação (Casos de Uso)](#-exemplos-de-interação-casos-de-uso)
-6. [Limitações Conhecidas & Roadmap Futuro](#-limitações-conhecidas--roadmap-futuro)
-7. [Transparência no Uso de Assistentes de IA](#-transparência-no-uso-de-assistentes-de-ia-workflow)
+The solution addresses the customer support overload at **Empório da Música** (a premier musical instrument retail store founded in 2008 in Campo Grande/MS, Brazil). It automates high-frequency inquiries regarding product catalogs, real-time inventory, pricing, order tracking, and institutional policies using **Deterministic Tool Calling** and **Semantic Retrieval-Augmented Generation (RAG)**.
 
 ---
 
-## 🏛️ Visão Geral da Arquitetura
+## 📑 Executive Summary
 
-O sistema adota uma **arquitetura híbrida desacoplada**, separando estritamente consultas a dados tabulares relacionais (via SQL) de consultas textuais normativas (via RAG):
+1. [Architecture Overview](#-architecture-overview)
+2. [Technical Decisions & Design Rationale](#-technical-decisions--design-rationale)
+3. [Quickstart Guide](#-quickstart-guide)
+4. [Automated Testing Suite](#-automated-testing-suite)
+5. [Interaction Examples & Edge Cases](#-interaction-examples--edge-cases)
+6. [Known Limitations & Future Roadmap](#-known-limitations--future-roadmap)
+7. [AI-Assisted Workflow Transparency](#-ai-assisted-workflow-transparency)
+
+---
+
+## 🏛️ Architecture Overview
+
+The system adopts a **decoupled hybrid architecture**, strictly separating structured relational queries (via in-memory SQL) from unstructured normative policy queries (via semantic RAG):
 
 ```text
                                ┌────────────────────────────────┐
-                               │     Cliente (Terminal CLI)     │
+                               │    Customer (Rich Terminal)    │
                                └───────────────┬────────────────┘
                                                │
                                                ▼
                                ┌────────────────────────────────┐
-                               │   EmporioAgent (Orquestrador)  │
-                               │  - Persona Empório da Música   │
-                               │  - Histórico Multi-turn        │
-                               │  - Guardrails de Escopo        │
+                               │   EmporioAgent (Orchestrator)  │
+                               │  - Store Persona & Hospitality │
+                               │  - Multi-turn Conversational   │
+                               │  - Strict Business Guardrails  │
                                └───────┬────────────────┬───────┘
                                        │                │
                    ┌───────────────────┴──┐          ┌──┴───────────────────┐
-                   │ Structured Queries   │          │ Unstructured Policies│
+                   │ Structured Relational│          │ Unstructured Policies│
                    ▼                      ▼          ▼                      ▼
         ┌──────────────────────┐  ┌─────────────┐ ┌─────────────────────────┐
         │ search_catalog       │  │ order_status│ │ search_policies         │
-        │ get_product_details  │  │ active_promo│ │ (Trocas, Devoluções,     │
-        │ list_categories      │  └──────┬──────┘ │  Garantia, Horários)    │
+        │ get_product_details  │  │ active_promo│ │ (Returns, Warranties,   │
+        │ list_categories      │  └──────┬──────┘ │  Hours & Delivery)      │
         └──────────┬───────────┘         │        └────────────┬────────────┘
                    │                     │                     │
                    ▼                     ▼                     ▼
         ┌───────────────────────────────────────┐ ┌─────────────────────────┐
-        │     SQLite In-Memory (:memory:)       │ │  BM25 Semantic Engine   │
-        │ (Products, Orders, Customers, Promos) │ │ (Chunks do PDF com Meta)│
+        │      SQLite In-Memory Engine          │ │  BM25 Semantic Engine   │
+        │ (Products, Orders, Customers, Promos) │ │ (Normalized PDF Chunks) │
         └───────────────────────────────────────┘ └─────────────────────────┘
 ```
 
-### Estrutura de Diretórios
+### Directory Structure
 
 ```text
 emporio-da-musica/
-├── data/                                # Dados originais fornecidos pela loja
-│   ├── desafio_tecnico_ai_eng - *.csv  # Tabelas operacionais
-│   └── políticas_da_loja.pdf           # Manual institucional
-├── examples/                            # 4 Transcrições completas de interações reais
+├── data/                                # Original store datasets & PDF manual
+│   ├── desafio_tecnico_ai_eng - *.csv  # Relational operational tables
+│   └── políticas_da_loja.pdf           # Internal procedures & policy guide
+├── examples/                            # Real conversation transcripts (edge cases)
 │   ├── 01_consulta_catalogo_e_precos.md
 │   ├── 02_politicas_devolucao_e_garantia.md
 │   ├── 03_status_pedido_e_rastreamento.md
 │   └── 04_cenario_complexo_promocao_e_acessorios.md
 ├── scripts/
-│   └── inspect_data.py                  # Script exploratório com validação de chaves
+│   ├── inspect_data.py                  # Exploratory analysis & key integrity check
+│   └── generate_submission_pdf.py       # Artefact official submission PDF compiler
 ├── src/
-│   ├── agent/                           # Prompts, Persona, Schemas e Orquestrador
-│   ├── database/                        # Ingestão SQLite em memória e queries
-│   ├── rag/                             # Parser de PDF, chunker e BM25 retriever
-│   ├── tools/                           # Schemas Pydantic e Tool Calling
-│   ├── ui/                              # Interface CLI formatada com Rich
-│   └── config.py                        # Pydantic Settings e variáveis de ambiente
-├── tests/                               # 31 testes unitários automatizados (pytest)
+│   ├── agent/                           # Orchestrator, Prompts, Persona & Schemas
+│   ├── database/                        # In-memory SQLite ingestion & queries
+│   ├── rag/                             # PDF text normalization, chunker & BM25 engine
+│   ├── tools/                           # Pydantic-typed tools for LLM Function Calling
+│   ├── ui/                              # Interactive CLI with Rich formatting
+│   └── config.py                        # Pydantic Settings & environment variables
+├── tests/                               # 31 unit tests (pytest) - 100% green
 │   ├── test_agent.py
 │   ├── test_database.py
 │   ├── test_rag.py
 │   └── test_tools.py
-├── .env.example                         # Template de variáveis de ambiente
-├── pyproject.toml                       # Dependências e metadados
-├── requirements.txt                     # Pacotes fixados
-└── main.py                              # Entrypoint rápido da aplicação
+├── .env.example                         # Environment configuration template
+├── pyproject.toml                       # Python package specification
+├── requirements.txt                     # Pinned dependencies
+├── main.py                              # Application entrypoint
+└── README.md                            # English documentation (Primary)
 ```
 
 ---
 
-## 🎯 Justificativas Técnicas e Decisões de Design
+## 🎯 Technical Decisions & Design Rationale
 
-### 1. Framework e Abordagem do Agente: Híbrido com Tool Calling Nativo
-- **Por que não um Text-to-SQL direto para o usuário?** Deixar o LLM gerar SQL arbitrário expõe o banco a riscos de injeção, alucinação de esquemas e respostas lentas. Optamos por **ferramentas determinísticas tipadas (Function Calling)** com contratos de dados validados via Pydantic (`search_catalog`, `get_order_status`, `search_policies`).
-- **Por que SQLite em memória (`:memory:`)?** As tabelas totalizam algumas dezenas de kilobytes. Carregá-las em memória garante respostas em menos de **1 ms** sem dependências de infraestrutura de banco externo, tornando o projeto 100% autocontido para os avaliadores.
+### 1. Hybrid Approach: Deterministic Function Calling vs. Free-form Text-to-SQL
+- **Why avoid raw Text-to-SQL?** Allowing a model to generate arbitrary SQL directly poses severe risks of prompt injection, hallucinated table joins, and slow query latency. Instead, we designed **deterministic, strictly typed tools via Pydantic** (`search_catalog`, `get_order_status`, `list_active_promotions`, `search_policies`).
+- **Why SQLite in-memory (`:memory:`)?** The dataset spans 6 CSVs totaling dozens of kilobytes. Loading them in an in-memory SQLite store provides **sub-millisecond (< 1 ms)** relational queries without requiring external database services (PostgreSQL/MySQL), ensuring the evaluator can run the project out-of-the-box.
 
-### 2. Retrieval-Augmented Generation (RAG) para Políticas
-- **Desafio do PDF Original:** O arquivo `políticas_da_loja.pdf` possuía quebras de linha em cada palavra individualmente após a extração padrão do `pypdf`. Desenvolvemos um **normalizador de fluxo textual** em [src/rag/ingestion.py](file:///d:/Downloads/Desafio_Técnico_AI_Engineer_2026-20260616T150750Z-3-001/Desafio%20Técnico%20AI%20Engineer%202026/src/rag/ingestion.py) que restaura a integridade das frases antes do chunking.
-- **Chunking Semântico:** Divisão orientada a tópicos com sobreposição (*sliding window* de 130 tokens com overlap de 30 tokens), preservando o número da página e o título da seção.
-- **Motor BM25 Okapi Nativo:** Implementamos um retriever semântico baseado no algoritmo BM25 Okapi em Python puro ([src/rag/retriever.py](file:///d:/Downloads/Desafio_Técnico_AI_Engineer_2026-20260616T150750Z-3-001/Desafio%20Técnico%20AI%20Engineer%202026/src/rag/retriever.py)) com tokenização em português e remoção de stopwords. Isso permite que qualquer pessoa execute a busca semântica em **0,001 s** sem depender obrigatoriamente de chaves de API pagas ou serviços em nuvem.
+### 2. Retrieval-Augmented Generation (RAG) for Store Policies
+- **Handling PDF Extraction Anomalies:** The provided `políticas_da_loja.pdf` exhibited line-breaks between individual tokens upon raw extraction with `pypdf`. We engineered a **text stream normalizer** in [src/rag/ingestion.py](src/rag/ingestion.py) that reconstructs clean sentences prior to chunking.
+- **Topic-Aware Semantic Chunking:** The document was segmented into topic-focused chunks using a sliding window of 130 words with a 30-word overlap, capturing section headers and page metadata.
+- **Zero-Dependency BM25 Okapi Engine:** To ensure complete independence from external embedding API costs and network latency during local evaluation, we implemented an optimized **BM25 Okapi retriever** in pure Python ([src/rag/retriever.py](src/rag/retriever.py)). It delivers relevant matches in **0.001 s** while supporting Brazilian Portuguese tokenization and stopword filtering.
 
-### 3. Modelo e Provedor (Agnóstico e Resiliente)
-- Suporte oficial aos modelos mais modernos e econômicos do mercado: **Google Gemini (`gemini-2.5-flash` / `gemini-1.5-flash`)** via SDK oficial `google-genai` e **OpenAI (`gpt-4o-mini`)**.
-- **Modo Offline/Heurístico Determinístico:** Se nenhuma chave for fornecida no `.env`, o agente entra automaticamente em modo de fallback inteligente, permitindo validar o fluxo conversacional e todas as ferramentas sem gerar custos ou travar por falta de credenciais.
+### 3. Model Agnostic & Resilient Fallback
+- Full compatibility with modern providers: **Google Gemini (`gemini-2.5-flash` / `gemini-1.5-flash`)** via the modern `google-genai` SDK and **OpenAI (`gpt-4o-mini`)**.
+- **Autonomous Deterministic Fallback:** If the evaluator runs the application without configuring API keys, the agent seamlessly operates in offline demonstration mode, ensuring zero runtime crashes and instant usability.
 
-### 4. Persona e Guardrails de Negócio
-- **Persona:** Especialista simpático, prestativo e com vocabulário técnico de luthieria/música (tampo maciço, escala, cordas de nylon, captação).
-- **Guardrail de Escopo de Produtos (Regra de Ouro):** A loja **não vende acessórios avulsos** (cordas soltas, palhetas avulsas, cases individuais, cabos ou amplificadores). Quando perguntado, o agente não alucina: explica a política com simpatia e oferece instrumentos completos equivalentes.
-- **Guardrail Fora de Escopo:** O agente recusa educadamente pedidos sobre receitas culinárias, disputas políticas ou código de computação.
+### 4. Persona & Domain Guardrails
+- **Persona:** Warm, polite, professional, and equipped with deep luthier and musical expertise (tonewoods, string gauges, scale length, pickup configurations).
+- **Core Business Guardrail (Crucial Rule):** The store **exclusively sells complete musical instruments** and **does not sell standalone accessories** (individual strings, loose picks, cables, strap-locks, standalone cases, effect pedals, or amps). The agent politely refuses accessory inquiries and suggests complete instruments.
+- **Scope Guardrail:** Off-topic prompts (political debates, baking recipes, code generation) are cordially declined while steering the conversation back to music.
 
 ---
 
-## 🚀 Como Executar o Projeto
+## 🚀 Quickstart Guide
 
-### Pré-requisitos
-- Python 3.11+ instalado.
+### Prerequisites
+- Python 3.11+ installed.
 
-### 1. Clonar o repositório e criar ambiente virtual
+### 1. Clone & Set Up Virtual Environment
 
 ```bash
 git clone https://github.com/snagh/emporio-da-musica-ai-agent.git
@@ -126,21 +135,21 @@ python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 2. Instalar dependências
+### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Configurar variáveis de ambiente (Opcional para modo LLM em nuvem)
+### 3. Environment Variables (Optional for Live API Execution)
 
-Copie o `.env.example` para `.env`:
+Copy `.env.example` to `.env`:
 ```bash
 cp .env.example .env
 ```
-Preencha sua `GOOGLE_API_KEY` (Gemini) ou `OPENAI_API_KEY`. Se optar por não preencher nenhuma chave, o agente ativará automaticamente o **Modo Offline Demonstrativo**, executando todas as ferramentas perfeitamente.
+Provide your `GOOGLE_API_KEY` or `OPENAI_API_KEY`. If left empty, the agent runs in **Autonomous Local Mode** with identical business logic and zero API consumption.
 
-### 4. Iniciar a CLI Interativa
+### 4. Launch the Interactive CLI
 
 ```bash
 python main.py
@@ -148,47 +157,49 @@ python main.py
 
 ---
 
-## 🧪 Execução dos Testes Automatizados
+## 🧪 Automated Testing Suite
 
-O projeto conta com **31 testes unitários** com 100% de sucesso, cobrindo banco de dados, repositório de consultas, motor RAG, ferramentas Pydantic e guardrails do agente:
+The repository includes **31 automated unit tests** covering data integrity, calculation of payment terms, RAG semantic retrieval, Pydantic tools, and agent guardrails:
 
 ```bash
 python -m pytest -v
 ```
 
----
-
-## 💬 Exemplos de Interação (Casos de Uso)
-
-As transcrições completas geradas pelo agente estão salvas na pasta [`examples/`](file:///d:/Downloads/Desafio_Técnico_AI_Engineer_2026-20260616T150750Z-3-001/Desafio%20Técnico%20AI%20Engineer%202026/examples):
-
-1. **`01_consulta_catalogo_e_precos.md`**: Filtro de violões até R$ 1.000,00 com busca de especificações (tampo e cordas de nylon).
-2. **`02_politicas_devolucao_e_garantia.md`**: Consulta institucional sobre localização em Campo Grande/MS, horários e aplicação do prazo legal de 7 dias para devolução por arrependimento.
-3. **`03_status_pedido_e_rastreamento.md`**: Consulta por ID de pedido com rastreamento dos Correios/transportadora e relação de itens.
-4. **`04_cenario_complexo_promocao_e_acessorios.md` (Cenário Não Trivial)**: O cliente solicita acessórios avulsos (o agente recusa educadamente com base nas políticas da loja), consulta promoções ativas de instrumentos e confere a regra de 5% de desconto no PIX.
+*All 31 tests pass in approximately 2.2 seconds.*
 
 ---
 
-## 🔮 Limitações Conhecidas & Roadmap Futuro
+## 💬 Interaction Examples & Edge Cases
 
-O que faríamos com mais tempo de desenvolvimento:
-1. **Histórico Persistente por Sessão / Redis**: Implementar armazenamento de histórico em Redis ou SQLite em disco indexado por `session_id`, permitindo que o cliente retome atendimentos passados.
-2. **Embeddings Vetoriais Híbridos (Dense + Sparse)**: Integrar embeddings vetoriais de 768 dimensões (`text-embedding-004`) com re-ranking via Cross-Encoder para consultas institucionais ainda mais nuances.
-3. **Interface Web / WhatsApp**: Criar um endpoint FastAPI com webhook compatível com a Evolution API / Twilio para atendimento direto via WhatsApp, alinhado com o canal principal da loja física.
-4. **Agentic Router com LangGraph**: Construir um grafo de estados explícito com checkpointing e loops de reflexão/auto-correção caso o estoque de um produto acabe durante o atendimento.
+Transcripts are located in [`examples/`](examples/):
+
+1. **`01_consulta_catalogo_e_precos.md`**: Budget-filtered query for acoustic guitars under R$ 1,000 with nylon string filtering.
+2. **`02_politicas_devolucao_e_garantia.md`**: Store address inquiry and legal 7-day right of withdrawal for online purchases.
+3. **`03_status_pedido_e_rastreamento.md`**: End-to-end order status tracking with carrier tracking codes and estimated arrival.
+4. **`04_cenario_complexo_promocao_e_acessorios.md` (Complex Scenario)**: Customer inquires about loose guitar picks (politely declined per store policy), browses active promotion items, and computes the 5% instant PIX discount.
 
 ---
 
-## 🤖 Transparência no Uso de Assistentes de IA (Workflow)
+## 🔮 Known Limitations & Future Roadmap
 
-Em estrita consonância com as orientações do edital da **Artefact**, documentamos o uso de ferramentas de IA durante a concepção e implementação desta solução:
+With additional engineering bandwidth, the following improvements are prioritized:
+1. **Session-Persistent Memory**: Integrating a Redis-backed or disk-persisted SQLite chat history indexed by `session_id`.
+2. **Dense + Sparse Hybrid Search**: Adding 768-dimensional vector embeddings (`text-embedding-004`) coupled with a Cross-Encoder reranker.
+3. **Omnichannel Messaging**: Providing an async FastAPI webhook for direct WhatsApp/Telegram integration (matching the store's primary sales channel).
+4. **LangGraph Agentic State Machine**: Defining an explicit state graph with checkpointing and self-correcting feedback loops.
 
-- **Assistente Utilizado:** **Google Antigravity** (ambiente oficial de pair programming agentic da Google com modelo Gemini).
-- **Como a IA foi utilizada no workflow:**
-  1. **Análise Exploratória Automatizada:** Criação do script [scripts/inspect_data.py](file:///d:/Downloads/Desafio_Técnico_AI_Engineer_2026-20260616T150750Z-3-001/Desafio%20Técnico%20AI%20Engineer%202026/scripts/inspect_data.py) para auditar 100% da integridade referencial dos CSVs e detectar anomalias de formatação no PDF original da loja.
-  2. **Engenharia de Prompt e Persona:** Refinamento do System Prompt em [src/agent/prompts.py](file:///d:/Downloads/Desafio_Técnico_AI_Engineer_2026-20260616T150750Z-3-001/Desafio%20Técnico%20AI%20Engineer%202026/src/agent/prompts.py) para incorporar as restrições estritas da loja (ausência de venda de acessórios avulsos, regras de parcelamento e desconto PIX de 5%).
-  3. **Aceleração da Suite de Testes:** Elaboração de 31 casos de teste unitário no `pytest` para blindar o comportamento das ferramentas contra regressões.
-- **Papel do Engenheiro Humano:**
-  - Decisão arquitetural de descartar Text-to-SQL arbitrário em favor de **Function Calling determinístico** para segurança e confiabilidade.
-  - Modelagem do banco em memória SQLite e estratégia de chunking semântico para o RAG.
-  - Validação manual de todas as regras de negócio e versionamento atômico do Git commit a commit.
+---
+
+## 🤖 AI-Assisted Workflow Transparency
+
+In compliance with the Artefact evaluation criteria, we transparently detail the usage of AI coding assistants:
+
+- **Assistant Used:** **Google Antigravity** (Google's agentic pair-programming assistant powered by Gemini).
+- **Workflow Highlights:**
+  1. **Automated Exploratory Data Analysis:** Generating [scripts/inspect_data.py](scripts/inspect_data.py) to audit relational foreign-key integrity across all CSVs and identify whitespace corruption in the policies PDF.
+  2. **Prompt Engineering:** Tailoring the System Prompt in [src/agent/prompts.py](src/agent/prompts.py) to enforce the store's commercial boundaries (accessory restrictions, 5% PIX discount, 12x credit card rules).
+  3. **Comprehensive Unit Testing:** Crafting 31 pytest scenarios to prevent functional regressions.
+- **Human Engineer Responsibility:**
+  - Selecting an in-memory hybrid architecture over fragile Text-to-SQL.
+  - Designing the token extraction and stopword sanitization algorithm.
+  - Ensuring strict Conventional Commits across the Git development trajectory.
