@@ -1,0 +1,19 @@
+# Core & Settings
+pydantic>=2.7.0
+pydantic-settings>=2.2.0
+python-dotenv>=1.0.1
+
+# Terminal UI & Utilitários
+rich>=13.7.0
+
+# Document Parsing & RAG
+pypdf>=4.2.0
+numpy>=1.26.0
+
+# Provedores de LLM & IA
+google-genai>=1.0.0
+openai>=1.30.0
+
+# Ferramentas de Teste e Qualidade de Código
+pytest>=8.1.0
+ruff>=0.4.0

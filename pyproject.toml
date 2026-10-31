@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "emporio-da-musica-ai-agent"
+version = "0.1.0"
+description = "Agente Conversacional Inteligente para Atendimento ao Cliente - Empório da Música (Desafio Artefact)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+    { name = "AI Engineering Candidate", email = "candidate@example.com" }
+]
+dependencies = [
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.2.0",
+    "python-dotenv>=1.0.1",
+    "rich>=13.7.0",
+    "pypdf>=4.2.0",
+    "numpy>=1.26.0",
+    "google-genai>=1.0.0",
+    "openai>=1.30.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.1.0",
+    "ruff>=0.4.0",
+]
+
+[project.scripts]
+emporio = "src.ui.cli:main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]

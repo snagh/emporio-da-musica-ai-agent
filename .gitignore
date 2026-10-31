@@ -1,0 +1,38 @@
+# Ambientes Virtuais e Dependências
+.venv/
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Variáveis de Ambiente e Segredos
+.env
+.env.local
+*.pem
+*.key
+
+# IDEs e Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testes e Cobertura
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Bancos temporários e vetoriais locais
+*.db
+*.sqlite3
+faiss_index/
+chroma_db/
+
+# Logs e arquivos de sistema
+*.log
+.DS_Store
+Thumbs.db
