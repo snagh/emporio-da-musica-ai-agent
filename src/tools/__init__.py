@@ -11,6 +11,7 @@ from src.tools.catalog_tools import (
     tool_search_catalog,
 )
 from src.tools.order_tools import tool_get_order_status
+from src.tools.policy_tools import tool_search_policies
 
 
 # Registro central das ferramentas disponíveis para execução
@@ -20,6 +21,7 @@ AVAILABLE_TOOLS: dict[str, Callable[..., str]] = {
     "list_active_promotions": tool_list_active_promotions,
     "list_categories": tool_list_categories,
     "get_order_status": tool_get_order_status,
+    "search_policies": tool_search_policies,
 }
 
 
