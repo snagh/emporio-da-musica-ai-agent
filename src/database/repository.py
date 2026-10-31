@@ -64,11 +64,20 @@ def search_products(
         params.extend([cat_term, cat_term])
 
     if query:
-        query_term = f"%{query.strip()}%"
-        conditions.append(
-            "(p.name LIKE ? OR p.description LIKE ? OR p.specs LIKE ?)"
-        )
-        params.extend([query_term, query_term, query_term])
+        import re
+        stop_words = {"quanto", "custa", "qual", "preco", "preço", "valor", "o", "a", "os", "as", "de", "do", "da", "em", "para", "com", "tem", "voce", "voces"}
+        raw_words = re.findall(r"\b[a-zA-ZÀ-ÿ0-9]+\b", query.lower())
+        tokens = [w for w in raw_words if w not in stop_words and len(w) > 1]
+        
+        if tokens:
+            for token in tokens:
+                token_term = f"%{token}%"
+                conditions.append("(LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(p.specs) LIKE ?)")
+                params.extend([token_term, token_term, token_term])
+        else:
+            query_term = f"%{query.strip().lower()}%"
+            conditions.append("(LOWER(p.name) LIKE ? OR LOWER(p.description) LIKE ? OR LOWER(p.specs) LIKE ?)")
+            params.extend([query_term, query_term, query_term])
 
     where_clause = " AND ".join(conditions)
     sql = f"""

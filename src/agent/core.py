@@ -190,8 +190,9 @@ class EmporioAgent:
                 [],
             )
 
-        # 2. Guardrail de acessórios avulsos (cordas, palhetas, amplificadores)
-        if any(w in msg for w in ["palheta", "cabo", "case", "amplificador", "pedal"]) and "guitarra" not in msg and "baixo" not in msg:
+        # 2. Guardrail de acessórios avulsos (cordas avulsas, palhetas, amplificadores, cabos)
+        accessory_keywords = ["palheta", "palhetas", "cabo", "cabos", "case", "cases", "amplificador", "amplificadores", "pedal", "pedais", "correia", "correias", "corda avulsa", "cordas avulsas"]
+        if any(w in msg for w in accessory_keywords):
             res_str = execute_tool("search_catalog", {"query": user_message})
             tools_executed.append({"tool": "search_catalog", "arguments": {"query": user_message}, "result": res_str})
             return (
@@ -277,30 +278,57 @@ class EmporioAgent:
                 )
             return "\n\n".join(lines), tools_executed
 
-        # 7. Consulta de catálogo / preços (ex: violões até R$ 1000)
-        import re
-        max_price_match = re.search(r"(\d+(?:\.\d+)?)\s*(?:reais|mil|r\$)?", msg)
-        max_p = None
-        if "1000" in msg or "mil" in msg:
-            max_p = 1000.0
-        cat = "Violões" if ("violão" in msg or "violao" in msg or "violões" in msg) else None
-        args = {"query": user_message if not cat else None, "category": cat, "max_price": max_p, "limit": 4}
-        res_str = execute_tool("search_catalog", args)
-        tools_executed.append({"tool": "search_catalog", "arguments": args, "result": res_str})
-        data = json.loads(res_str)
+        # 7. Consulta de catálogo / preços (ex: violões até R$ 1000 ou "Quanto custa o Takamine GD20")
+        is_catalog_query = any(
+            w in msg for w in [
+                "quanto custa", "preço", "preco", "valor", "violão", "violao", "guitarra", "baixo",
+                "teclado", "bateria", "ukulele", "sopro", "takamine", "yamaha", "tagima", "roland",
+                "fender", "gibson", "shure", "opções", "opcoes", "catálogo", "catalogo"
+            ]
+        ) or "1000" in msg or "mil" in msg or "r$" in msg
 
-        results = data.get("results", [])
-        if results:
-            lines = ["Encontrei ótimas opções disponíveis no nosso estoque para você:"]
-            for prod in results:
-                lines.append(
-                    f"🎸 **{prod['name']}** ({prod['category']})\n"
-                    f"   • Preço: **R$ {prod['final_price_brl']:.2f}**\n"
-                    f"   • No PIX à vista: **R$ {prod['payment_conditions']['pix_price_brl']:.2f}** (5% OFF)\n"
-                    f"   • Cartão: {prod['payment_conditions']['credit_details']}\n"
-                    f"   • Detalhes: {prod['description']}"
-                )
-            return "\n\n".join(lines), tools_executed
+        if is_catalog_query:
+            import re
+            max_p = None
+            if "1000" in msg or "mil" in msg:
+                max_p = 1000.0
+            
+            cat = None
+            if "violão" in msg or "violao" in msg or "violões" in msg:
+                cat = "Violões"
+            elif "guitarra" in msg:
+                cat = "Guitarras"
+            elif "baixo" in msg:
+                cat = "Baixos"
+            elif "teclado" in msg or "piano" in msg:
+                cat = "Teclados"
+            elif "bateria" in msg:
+                cat = "Baterias e Percussão"
+            elif "ukulele" in msg:
+                cat = "Ukuleles"
+
+            args = {"query": user_message if not cat else None, "category": cat, "max_price": max_p, "limit": 4}
+            # Se perguntou especificamente sobre um modelo (ex: Takamine GD20)
+            if "takamine" in msg or "gd20" in msg or "c40" in msg:
+                args["query"] = user_message
+                args["category"] = None
+
+            res_str = execute_tool("search_catalog", args)
+            tools_executed.append({"tool": "search_catalog", "arguments": args, "result": res_str})
+            data = json.loads(res_str)
+
+            results = data.get("results", [])
+            if results:
+                lines = ["Encontrei ótimas opções disponíveis no nosso estoque para você:"]
+                for prod in results:
+                    lines.append(
+                        f"🎸 **{prod['name']}** ({prod['category']})\n"
+                        f"   • Preço: **R$ {prod['final_price_brl']:.2f}**\n"
+                        f"   • No PIX à vista: **R$ {prod['payment_conditions']['pix_price_brl']:.2f}** (5% OFF)\n"
+                        f"   • Cartão: {prod['payment_conditions']['credit_details']}\n"
+                        f"   • Detalhes: {prod['description']}"
+                    )
+                return "\n\n".join(lines), tools_executed
 
         # Resposta padrão cordial
         return (
